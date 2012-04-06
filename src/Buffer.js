@@ -21,7 +21,7 @@ Buffer.prototype.toString = function()
 {
 	var str = "";
 	str += "<br/>Buffer " + this.name + "<br/>";
-	str += "Num elements = " + this.data.length + "<br/>";
+	if( this.data ) str += "Num elements = " + this.data.length + "<br/>";
 	str += "size: " + this.size + " bytes<br/>";
 	return str;
 }

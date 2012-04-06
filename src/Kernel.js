@@ -52,6 +52,7 @@ Kernel.prototype.toString = function()
 {
 	var str = "";
 	str += "<br/>Kernel " + this.name + "<br/>";
+	str += "Global group dimensions: " + this.globalWS.length + "<br/>";
 	str += "Global work item size: " + this.globalWS + "<br/>";
 	str += "Local work item size: " + this.localWS + "<br/>";
 	return str;

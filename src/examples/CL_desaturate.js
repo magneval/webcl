@@ -2,7 +2,7 @@ CL_desaturate = function( domElement )
 {
 	CL_app.call( this );
 	this.domElement = domElement;
-	//this.numElements = numElements;
+	this.canvas = null;
 }
 
 CL_desaturate.prototype = new CL_app();
@@ -13,6 +13,11 @@ ImageItem = function( domElement )
 	this.domElement = domElement;
 	this.width = domElement.width;
 	this.height = domElement.height;
+}
+
+ImageItem.prototype.toString = function()
+{
+
 }
 
 CanvasItem = function( domElement, srcDom )
@@ -48,15 +53,15 @@ CanvasItem.prototype.setupCanvas = function()
 CL_desaturate.prototype.init = function () 
 {
 	//setupCanvas();
-	var canvas = new CanvasItem( document.getElementById("canvasImg"),  document.getElementById("srcimg") );
-	canvas.setupCanvas();
+	this.canvas = new CanvasItem( document.getElementById("canvasImg"),  document.getElementById("srcimg") );
+	this.canvas.setupCanvas();
 	
 	try 
 	{
 		// Get pixel data from canvas
-		var width = canvas.image.width;
-		var height = canvas.image.height;
-		var pixels = canvas.pixels;
+		var width = this.canvas.image.width;
+		var height = this.canvas.image.height;
+		var pixels = this.canvas.pixels;
 
 		// Setup buffers
 		var imgSize = width * height;
@@ -96,30 +101,16 @@ CL_desaturate.prototype.init = function ()
 		cmdQueue.enqueueWriteBuffer (this.bufsIn[0].blob, false, 0, bufSize, this.bufOut.data, []);
 		
 		// Execute (enqueue) kernel			  
-		this.kernels[0].run();
+		this.runAll();
 
-		// Read the result buffer from OpenCL device
-		this.bufOut.writeFromDevice();
-		
-		pixels.data = this.bufOut.data;
-		canvas.imgContext.putImageData (pixels, 0, 0);
+		this.printResult();
 
 		// print results
 		this.domElement.innerHTML += "<br>Image size: " + imgSize + " pixels ("
 						 + width + " x " + height + ")";
 		
-		this.domElement.innerHTML += "<br>Buffer size: " + bufSize + " bytes";
-
-		this.domElement.innerHTML += "<br>work group dimensions: " + globalWS.length;
-		for (var i = 0; i < globalWS.length; ++i)
-		{
-			this.domElement.innerHTML += "<br>global work item size[" + i + "]: " + globalWS[i];
-		}
-		for (var i = 0; i < localWS.length; ++i)
-		{
-			this.domElement.innerHTML += "<br>local work item size[" + i + "]: " + localWS[i];
-		}
-		  
+		this.printDebug();
+		
 		this.domElement.innerHTML += "<br>Done.";
 	} 
 	catch(e) 
@@ -128,4 +119,34 @@ CL_desaturate.prototype.init = function ()
 		  "<h3>ERROR:</h3><pre style=\"color:red;\">" + e.message + "</pre>";
 		throw e;
 	}
+}
+
+CL_desaturate.prototype.runAll = function()
+{
+	// Execute (enqueue) kernel
+	for( var i = 0; i < this.kernels.length; i=i+1)
+	{
+		this.kernels[i].run();
+	}
+}
+
+CL_desaturate.prototype.printDebug = function()
+{
+	for( var i = 0; i < this.bufsIn.length; i=i+1)
+	{
+		this.domElement.innerHTML += this.bufsIn[i].toString();
+	}
+	for( var i = 0; i < this.kernels.length; i=i+1)
+	{
+		this.domElement.innerHTML += this.kernels[i].toString();
+	}
+}
+
+CL_desaturate.prototype.printResult = function()
+{
+	// Read the result buffer from OpenCL device
+	this.bufOut.writeFromDevice();
+		
+	this.canvas.pixels.data = this.bufOut.data;
+	this.canvas.imgContext.putImageData( this.canvas.pixels, 0, 0 );
 }
