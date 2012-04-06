@@ -65,11 +65,14 @@ CL_desaturate.prototype.init = function ()
 		var bufSize = imgSize * 4; // size in bytes
 		this.domElement.innerHTML += "<br>Buffer size: " + bufSize + " bytes";
 		
-		var bufIn = context.createBuffer (WebCL.CL_MEM_READ_ONLY, bufSize);
-		var bufOut = context.createBuffer (WebCL.CL_MEM_WRITE_ONLY, bufSize);
+		// Reserve buffers
+		this.bufsIn = [ new Buffer( bufSize ) ];
+		for( var i = 0; i < this.bufsIn.length; i=i+1)
+		{
+			this.bufsIn[i].create();
+		}
 		
 		this.bufOut = new Buffer( bufSize );
-		//this.bufOut.data = new Uint32Array( imgSize );
 		this.bufOut.create();
 		
 		// Reserve buffers
@@ -83,35 +86,25 @@ CL_desaturate.prototype.init = function ()
 		var globalWS = [Math.ceil (width / localWS[0]) * localWS[0], 
 						Math.ceil (height / localWS[1]) * localWS[1]];
 						
-		 // Create and build program
+		// Create and build kernal and program for the first device
 		this.kernels = [ new Kernel("clProgramDesaturate", "clDesaturate", globalWS, localWS) ];
-		
-		var kernelSrc = loadKernel("clProgramDesaturate");
-		var program = context.createProgramWithSource(kernelSrc);
-		var devices = context.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
-		try {
-		  program.buildProgram ([devices[0]], "");
-		} catch(e) {
-		  alert ("Failed to build WebCL program. Error "
-				 + program.getProgramBuildInfo (devices[0], 
-												WebCL.CL_PROGRAM_BUILD_STATUS)
-				 + ":  " + program.getProgramBuildInfo (devices[0], 
-														WebCL.CL_PROGRAM_BUILD_LOG));
-		  throw e;
+		for( var i = 0; i < this.kernels.length; i=i+1)
+		{
+			this.kernels[i].load();
+			this.kernels[i].build();
 		}
 
-		// Create kernel and set arguments
-		var kernel = program.createKernel ("clDesaturate");
-		kernel.setKernelArg (0, bufIn);
-		kernel.setKernelArg (1, this.bufOut.blob);
-		kernel.setKernelArg (2, width, WebCL.types.UINT);
-		kernel.setKernelArg (3, height, WebCL.types.UINT);
+		// Set arguments
+		this.kernels[0].blob.setKernelArg (0, this.bufsIn[0].blob);
+		this.kernels[0].blob.setKernelArg (1, this.bufOut.blob);
+		this.kernels[0].blob.setKernelArg (2, width, WebCL.types.UINT);
+		this.kernels[0].blob.setKernelArg (3, height, WebCL.types.UINT);
 
 		// Create command queue using the first available device
 		var cmdQueue = context.createCommandQueue (devices[0], 0);
 
 		// Write the buffer to OpenCL device memory
-		cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, pixels.data, []);
+		cmdQueue.enqueueWriteBuffer (this.bufsIn[0].blob, false, 0, bufSize, pixels.data, []);
 		
 		this.domElement.innerHTML += "<br>work group dimensions: " + globalWS.length;
 		for (var i = 0; i < globalWS.length; ++i)
@@ -120,7 +113,7 @@ CL_desaturate.prototype.init = function ()
 		  this.domElement.innerHTML += "<br>local work item size[" + i + "]: " + localWS[i];
 		
 		// Execute (enqueue) kernel
-		cmdQueue.enqueueNDRangeKernel(kernel, globalWS.length, [], 
+		cmdQueue.enqueueNDRangeKernel(this.kernels[0].blob, globalWS.length, [], 
 									  globalWS, localWS, []);
 
 		// Read the result buffer from OpenCL device
