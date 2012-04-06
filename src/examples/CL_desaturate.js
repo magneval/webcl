@@ -45,7 +45,6 @@ CL_desaturate.prototype.init = function ()
 	
 	try 
 	{
-
 		// Get pixel data from canvas
 		var canvasImg = document.getElementById("canvasImg");
 		var canvasImgcontext = canvasImg.getContext("2d");
@@ -60,10 +59,7 @@ CL_desaturate.prototype.init = function ()
 		
 		// Setup buffers
 		var imgSize = width * height;
-		this.domElement.innerHTML += "<br>Image size: " + imgSize + " pixels ("
-						 + width + " x " + height + ")";
 		var bufSize = imgSize * 4; // size in bytes
-		this.domElement.innerHTML += "<br>Buffer size: " + bufSize + " bytes";
 		
 		// Reserve buffers
 		this.bufsIn = [ new Buffer( bufSize ) ];
@@ -100,17 +96,8 @@ CL_desaturate.prototype.init = function ()
 		this.kernels[0].blob.setKernelArg (2, width, WebCL.types.UINT);
 		this.kernels[0].blob.setKernelArg (3, height, WebCL.types.UINT);
 
-		// Create command queue using the first available device
-		var cmdQueue = context.createCommandQueue (devices[0], 0);
-
 		// Write the buffer to OpenCL device memory
 		cmdQueue.enqueueWriteBuffer (this.bufsIn[0].blob, false, 0, bufSize, pixels.data, []);
-		
-		this.domElement.innerHTML += "<br>work group dimensions: " + globalWS.length;
-		for (var i = 0; i < globalWS.length; ++i)
-		  this.domElement.innerHTML += "<br>global work item size[" + i + "]: " + globalWS[i];
-		for (var i = 0; i < localWS.length; ++i)
-		  this.domElement.innerHTML += "<br>local work item size[" + i + "]: " + localWS[i];
 		
 		// Execute (enqueue) kernel
 		cmdQueue.enqueueNDRangeKernel(this.kernels[0].blob, globalWS.length, [], 
@@ -122,6 +109,22 @@ CL_desaturate.prototype.init = function ()
 		
 		canvasImgcontext.putImageData (pixels, 0, 0);
 
+		// print results
+		this.domElement.innerHTML += "<br>Image size: " + imgSize + " pixels ("
+						 + width + " x " + height + ")";
+		
+		this.domElement.innerHTML += "<br>Buffer size: " + bufSize + " bytes";
+
+		this.domElement.innerHTML += "<br>work group dimensions: " + globalWS.length;
+		for (var i = 0; i < globalWS.length; ++i)
+		{
+			this.domElement.innerHTML += "<br>global work item size[" + i + "]: " + globalWS[i];
+		}
+		for (var i = 0; i < localWS.length; ++i)
+		{
+			this.domElement.innerHTML += "<br>local work item size[" + i + "]: " + localWS[i];
+		}
+		  
 		this.domElement.innerHTML += "<br>Done.";
 	} 
 	catch(e) 
