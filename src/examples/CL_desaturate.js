@@ -13,11 +13,11 @@ function setupCanvas ()
 	try 
 	{
 		var canvasImg = document.getElementById("canvasImg");
-		var canvasImgCtx = canvasImg.getContext("2d");
+		var canvasImgcontext = canvasImg.getContext("2d");
 		var srcImg = document.getElementById("srcimg");
 		canvasImg.width = srcImg.width;
 		canvasImg.height = srcImg.height;
-		canvasImgCtx.drawImage (srcImg, 0, 0, srcImg.width, srcImg.height);
+		canvasImgcontext.drawImage (srcImg, 0, 0, srcImg.width, srcImg.height);
 	} 
 	catch(e) 
 	{
@@ -48,23 +48,16 @@ CL_desaturate.prototype.init = function ()
 
 		// Get pixel data from canvas
 		var canvasImg = document.getElementById("canvasImg");
-		var canvasImgCtx = canvasImg.getContext("2d");
+		var canvasImgcontext = canvasImg.getContext("2d");
 		var width = canvasImg.width;
 		var height = canvasImg.height;
-		var pixels = canvasImgCtx.getImageData(0, 0, width, height);
+		var pixels = canvasImgcontext.getImageData(0, 0, width, height);
 
 		// Dimm the existing canvas to highlight any errors we might get.
 		// This does not affect the already retrieved pixel data.
-		canvasImgCtx.fillStyle = "rgba(0,0,0,0.7)";
-		canvasImgCtx.fillRect(0, 0, width, height);
+		canvasImgcontext.fillStyle = "rgba(0,0,0,0.7)";
+		canvasImgcontext.fillRect(0, 0, width, height);
 		
-		// Setup WebCL context using the default device of the first available 
-		// platform
-		var platforms = WebCL.getPlatformIDs();     
-		var ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM, 
-											   platforms[0]],
-											   WebCL.CL_DEVICE_TYPE_DEFAULT);
-
 		// Setup buffers
 		var imgSize = width * height;
 		this.domElement.innerHTML += "<br>Image size: " + imgSize + " pixels ("
@@ -72,8 +65,18 @@ CL_desaturate.prototype.init = function ()
 		var bufSize = imgSize * 4; // size in bytes
 		this.domElement.innerHTML += "<br>Buffer size: " + bufSize + " bytes";
 		
-		var bufIn = ctx.createBuffer (WebCL.CL_MEM_READ_ONLY, bufSize);
-		var bufOut = ctx.createBuffer (WebCL.CL_MEM_WRITE_ONLY, bufSize);
+		var bufIn = context.createBuffer (WebCL.CL_MEM_READ_ONLY, bufSize);
+		var bufOut = context.createBuffer (WebCL.CL_MEM_WRITE_ONLY, bufSize);
+		
+		this.bufOut = new Buffer( bufSize );
+		//this.bufOut.data = new Uint32Array( imgSize );
+		this.bufOut.create();
+		
+		// Reserve buffers
+		for( var i = 0; i < this.bufsIn.length; i=i+1)
+		{
+			this.bufsIn[i].create();
+		}
 
 		// Init ND-range 
 		var localWS = [16,4];  
@@ -84,8 +87,8 @@ CL_desaturate.prototype.init = function ()
 		this.kernels = [ new Kernel("clProgramDesaturate", "clDesaturate", globalWS, localWS) ];
 		
 		var kernelSrc = loadKernel("clProgramDesaturate");
-		var program = ctx.createProgramWithSource(kernelSrc);
-		var devices = ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
+		var program = context.createProgramWithSource(kernelSrc);
+		var devices = context.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
 		try {
 		  program.buildProgram ([devices[0]], "");
 		} catch(e) {
@@ -100,12 +103,12 @@ CL_desaturate.prototype.init = function ()
 		// Create kernel and set arguments
 		var kernel = program.createKernel ("clDesaturate");
 		kernel.setKernelArg (0, bufIn);
-		kernel.setKernelArg (1, bufOut);
+		kernel.setKernelArg (1, this.bufOut.blob);
 		kernel.setKernelArg (2, width, WebCL.types.UINT);
 		kernel.setKernelArg (3, height, WebCL.types.UINT);
 
 		// Create command queue using the first available device
-		var cmdQueue = ctx.createCommandQueue (devices[0], 0);
+		var cmdQueue = context.createCommandQueue (devices[0], 0);
 
 		// Write the buffer to OpenCL device memory
 		cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, pixels.data, []);
@@ -121,10 +124,10 @@ CL_desaturate.prototype.init = function ()
 									  globalWS, localWS, []);
 
 		// Read the result buffer from OpenCL device
-		cmdQueue.enqueueReadBuffer (bufOut, false, 0, bufSize, pixels.data, []);
+		cmdQueue.enqueueReadBuffer (this.bufOut.blob, false, 0, bufSize, pixels.data, []);
 		cmdQueue.finish (); //Finish all the operations
 		
-		canvasImgCtx.putImageData (pixels, 0, 0);
+		canvasImgcontext.putImageData (pixels, 0, 0);
 
 		this.domElement.innerHTML += "<br>Done.";
 	} 
