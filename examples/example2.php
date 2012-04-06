@@ -36,13 +36,13 @@ window.onload=function()
 
 	if( clEnabled )
 	{
-		setupCanvas ();
-		CL_desaturate( output );
+		//setupCanvas ();
+		//CL_desaturate( output );
 		//CL_vectorAdd();
 		//webcl.dumpCLData();
 		
-		//var vectorAdd = new CL_vectorAdd( output, 30 );
-		//vectorAdd.init();
+		var desaturate = new CL_desaturate( output );
+		desaturate.init();
 		
 		// Execute (enqueue) kernel
 		//vectorAdd.runAll();

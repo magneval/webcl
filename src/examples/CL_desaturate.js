@@ -1,16 +1,30 @@
-function setupCanvas () {
-  try {
-    var canvasImg = document.getElementById("canvasImg");
-    var canvasImgCtx = canvasImg.getContext("2d");
-    var srcImg = document.getElementById("srcimg");
-    canvasImg.width = srcImg.width;
-    canvasImg.height = srcImg.height;
-    canvasImgCtx.drawImage (srcImg, 0, 0, srcImg.width, srcImg.height);
-  } catch(e) {
-    document.getElementById("output").innerHTML += 
-      "<h3>ERROR:</h3><pre style=\"color:red;\">" + e.message + "</pre>";
-    throw e;
-  }
+CL_desaturate = function( domElement )
+{
+	CL_app.call( this );
+	this.domElement = domElement;
+	//this.numElements = numElements;
+}
+
+CL_desaturate.prototype = new CL_app();
+CL_desaturate.prototype.constructor = CL_desaturate;
+
+function setupCanvas () 
+{
+	try 
+	{
+		var canvasImg = document.getElementById("canvasImg");
+		var canvasImgCtx = canvasImg.getContext("2d");
+		var srcImg = document.getElementById("srcimg");
+		canvasImg.width = srcImg.width;
+		canvasImg.height = srcImg.height;
+		canvasImgCtx.drawImage (srcImg, 0, 0, srcImg.width, srcImg.height);
+	} 
+	catch(e) 
+	{
+		document.getElementById("output").innerHTML += 
+		  "<h3>ERROR:</h3><pre style=\"color:red;\">" + e.message + "</pre>";
+		throw e;
+	}
 }
 
 function loadKernel(id){
@@ -25,12 +39,9 @@ function loadKernel(id){
   return kernelSource;
 }
 
-function CL_desaturate ( output ) 
+CL_desaturate.prototype.init = function () 
 {
-
-	// All output is written to element by id "output"
-	//var output = document.getElementById("output");
-	output.innerHTML = "";
+	setupCanvas();
 	
 	try 
 	{
@@ -56,15 +67,22 @@ function CL_desaturate ( output )
 
 		// Setup buffers
 		var imgSize = width * height;
-		output.innerHTML += "<br>Image size: " + imgSize + " pixels ("
+		this.domElement.innerHTML += "<br>Image size: " + imgSize + " pixels ("
 						 + width + " x " + height + ")";
 		var bufSize = imgSize * 4; // size in bytes
-		output.innerHTML += "<br>Buffer size: " + bufSize + " bytes";
+		this.domElement.innerHTML += "<br>Buffer size: " + bufSize + " bytes";
 		
 		var bufIn = ctx.createBuffer (WebCL.CL_MEM_READ_ONLY, bufSize);
 		var bufOut = ctx.createBuffer (WebCL.CL_MEM_WRITE_ONLY, bufSize);
 
+		// Init ND-range 
+		var localWS = [16,4];  
+		var globalWS = [Math.ceil (width / localWS[0]) * localWS[0], 
+						Math.ceil (height / localWS[1]) * localWS[1]];
+						
 		 // Create and build program
+		this.kernels = [ new Kernel("clProgramDesaturate", "clDesaturate", globalWS, localWS) ];
+		
 		var kernelSrc = loadKernel("clProgramDesaturate");
 		var program = ctx.createProgramWithSource(kernelSrc);
 		var devices = ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
@@ -91,17 +109,12 @@ function CL_desaturate ( output )
 
 		// Write the buffer to OpenCL device memory
 		cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, pixels.data, []);
-
-		// Init ND-range 
-		var localWS = [16,4];  
-		var globalWS = [Math.ceil (width / localWS[0]) * localWS[0], 
-						Math.ceil (height / localWS[1]) * localWS[1]];
 		
-		output.innerHTML += "<br>work group dimensions: " + globalWS.length;
+		this.domElement.innerHTML += "<br>work group dimensions: " + globalWS.length;
 		for (var i = 0; i < globalWS.length; ++i)
-		  output.innerHTML += "<br>global work item size[" + i + "]: " + globalWS[i];
+		  this.domElement.innerHTML += "<br>global work item size[" + i + "]: " + globalWS[i];
 		for (var i = 0; i < localWS.length; ++i)
-		  output.innerHTML += "<br>local work item size[" + i + "]: " + localWS[i];
+		  this.domElement.innerHTML += "<br>local work item size[" + i + "]: " + localWS[i];
 		
 		// Execute (enqueue) kernel
 		cmdQueue.enqueueNDRangeKernel(kernel, globalWS.length, [], 
@@ -113,11 +126,11 @@ function CL_desaturate ( output )
 		
 		canvasImgCtx.putImageData (pixels, 0, 0);
 
-		output.innerHTML += "<br>Done.";
+		this.domElement.innerHTML += "<br>Done.";
 	} 
 	catch(e) 
 	{
-		output.innerHTML += 
+		this.domElement.innerHTML += 
 		  "<h3>ERROR:</h3><pre style=\"color:red;\">" + e.message + "</pre>";
 		throw e;
 	}
