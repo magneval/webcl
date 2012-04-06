@@ -31,6 +31,11 @@ CanvasItem.prototype.setupCanvas = function()
 		this.imgContext.drawImage (this.image.domElement, 0, 0, this.image.width, this.image.height);
 		// Get pixel data from canvas
 		this.pixels = this.imgContext.getImageData(0, 0, this.image.width, this.image.height);
+		
+		// Dimm the existing canvas to highlight any errors we might get.
+		// This does not affect the already retrieved pixel data.
+		this.imgContext.fillStyle = "rgba(0,0,0,0.7)";
+		this.imgContext.fillRect(0, 0, width, height);
 	} 
 	catch(e) 
 	{
@@ -53,11 +58,6 @@ CL_desaturate.prototype.init = function ()
 		var height = canvas.image.height;
 		var pixels = canvas.pixels;
 
-		// Dimm the existing canvas to highlight any errors we might get.
-		// This does not affect the already retrieved pixel data.
-		canvas.imgContext.fillStyle = "rgba(0,0,0,0.7)";
-		canvas.imgContext.fillRect(0, 0, width, height);
-		
 		// Setup buffers
 		var imgSize = width * height;
 		var bufSize = imgSize * 4; // size in bytes
@@ -71,12 +71,7 @@ CL_desaturate.prototype.init = function ()
 		
 		this.bufOut = new Buffer( bufSize );
 		this.bufOut.create();
-		
-		// Reserve buffers
-		for( var i = 0; i < this.bufsIn.length; i=i+1)
-		{
-			this.bufsIn[i].create();
-		}
+		this.bufOut.data = pixels.data;
 
 		// Init ND-range 
 		var localWS = [16,4];  
@@ -98,16 +93,15 @@ CL_desaturate.prototype.init = function ()
 		this.kernels[0].blob.setKernelArg (3, height, WebCL.types.UINT);
 
 		// Write the buffer to OpenCL device memory
-		cmdQueue.enqueueWriteBuffer (this.bufsIn[0].blob, false, 0, bufSize, pixels.data, []);
+		cmdQueue.enqueueWriteBuffer (this.bufsIn[0].blob, false, 0, bufSize, this.bufOut.data, []);
 		
-		// Execute (enqueue) kernel
-		cmdQueue.enqueueNDRangeKernel(this.kernels[0].blob, globalWS.length, [], 
-									  globalWS, localWS, []);
+		// Execute (enqueue) kernel			  
+		this.kernels[0].run();
 
 		// Read the result buffer from OpenCL device
-		cmdQueue.enqueueReadBuffer (this.bufOut.blob, false, 0, bufSize, pixels.data, []);
-		cmdQueue.finish (); //Finish all the operations
+		this.bufOut.writeFromDevice();
 		
+		pixels.data = this.bufOut.data;
 		canvas.imgContext.putImageData (pixels, 0, 0);
 
 		// print results
