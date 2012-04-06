@@ -9,7 +9,8 @@
 
 <?php
 
-include("example1.php");
+//include("example1.php");
+include("example2.php");
 
 ?>
 
@@ -17,6 +18,10 @@ include("example1.php");
 </head>
 
 <body>
+
+<img id="srcimg" src="images/lenna-256.jpg"></img>
+
+<canvas id="canvasImg" width='256' height='256'></canvas>
 
 </body>
 </html>
