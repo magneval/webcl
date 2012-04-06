@@ -8,6 +8,14 @@ CL_desaturate = function( domElement )
 CL_desaturate.prototype = new CL_app();
 CL_desaturate.prototype.constructor = CL_desaturate;
 
+ImageItem = function( domElement )
+{
+	this.domElement = domElement;
+	this.width = domElement.width;
+	this.height = domElement.height;
+	alert(this.width + " "+ this.height);
+}
+
 CanvasItem = function( domElement, srcDom )
 {
 	this.domElement = domElement;
@@ -15,50 +23,26 @@ CanvasItem = function( domElement, srcDom )
 	this.image = new ImageItem( srcDom );
 }
 
-ImageItem = function( domElement )
-{
-	this.domElement = domElement;
-	this.width = domElement.width;
-	this.height = domElement.height;
-}
-
 CanvasItem.prototype.setupCanvas = function()
 {
 	try 
-	{
+	{	
 		var canvasImgcontext = this.domElement.getContext("2d");
-		canvasImgcontext.drawImage ( this.image.domElement, 0, 0, this.image.width, this.image.height);
+		canvasImgcontext.drawImage (this.image.domElement, 0, 0, this.image.width, this.image.height);
 	} 
 	catch(e) 
 	{
-		document.getElementById("output").innerHTML += 
+		/*document.getElementById("output").innerHTML += 
 		  "<h3>ERROR:</h3><pre style=\"color:red;\">" + e.message + "</pre>";
-		throw e;
-	}
-}
-
-function setupCanvas () 
-{
-	try 
-	{
-		var canvasImg = document.getElementById("canvasImg");
-		var canvasImgcontext = canvasImg.getContext("2d");
-		var srcImg = document.getElementById("srcimg");
-		canvasImg.width = srcImg.width;
-		canvasImg.height = srcImg.height;
-		canvasImgcontext.drawImage (srcImg, 0, 0, srcImg.width, srcImg.height);
-	} 
-	catch(e) 
-	{
-		document.getElementById("output").innerHTML += 
-		  "<h3>ERROR:</h3><pre style=\"color:red;\">" + e.message + "</pre>";
-		throw e;
+		throw e;*/
 	}
 }
 
 CL_desaturate.prototype.init = function () 
 {
-	setupCanvas();
+	//setupCanvas();
+	var canvas = new CanvasItem( document.getElementById("canvasImg"),  document.getElementById("srcimg") );
+	canvas.setupCanvas();
 	
 	try 
 	{
