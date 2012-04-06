@@ -13,7 +13,6 @@ ImageItem = function( domElement )
 	this.domElement = domElement;
 	this.width = domElement.width;
 	this.height = domElement.height;
-	alert(this.width + " "+ this.height);
 }
 
 CanvasItem = function( domElement, srcDom )
@@ -21,14 +20,17 @@ CanvasItem = function( domElement, srcDom )
 	this.domElement = domElement;
 	this.srcDom = srcDom;
 	this.image = new ImageItem( srcDom );
+	this.imgContext = this.domElement.getContext("2d");
+	this.pixels = null;
 }
 
 CanvasItem.prototype.setupCanvas = function()
 {
 	try 
 	{	
-		var canvasImgcontext = this.domElement.getContext("2d");
-		canvasImgcontext.drawImage (this.image.domElement, 0, 0, this.image.width, this.image.height);
+		this.imgContext.drawImage (this.image.domElement, 0, 0, this.image.width, this.image.height);
+		// Get pixel data from canvas
+		this.pixels = this.imgContext.getImageData(0, 0, this.image.width, this.image.height);
 	} 
 	catch(e) 
 	{
@@ -47,16 +49,14 @@ CL_desaturate.prototype.init = function ()
 	try 
 	{
 		// Get pixel data from canvas
-		var canvasImg = document.getElementById("canvasImg");
-		var canvasImgcontext = canvasImg.getContext("2d");
-		var width = canvasImg.width;
-		var height = canvasImg.height;
-		var pixels = canvasImgcontext.getImageData(0, 0, width, height);
+		var width = canvas.image.width;
+		var height = canvas.image.height;
+		var pixels = canvas.pixels;
 
 		// Dimm the existing canvas to highlight any errors we might get.
 		// This does not affect the already retrieved pixel data.
-		canvasImgcontext.fillStyle = "rgba(0,0,0,0.7)";
-		canvasImgcontext.fillRect(0, 0, width, height);
+		canvas.imgContext.fillStyle = "rgba(0,0,0,0.7)";
+		canvas.imgContext.fillRect(0, 0, width, height);
 		
 		// Setup buffers
 		var imgSize = width * height;
@@ -108,7 +108,7 @@ CL_desaturate.prototype.init = function ()
 		cmdQueue.enqueueReadBuffer (this.bufOut.blob, false, 0, bufSize, pixels.data, []);
 		cmdQueue.finish (); //Finish all the operations
 		
-		canvasImgcontext.putImageData (pixels, 0, 0);
+		canvas.imgContext.putImageData (pixels, 0, 0);
 
 		// print results
 		this.domElement.innerHTML += "<br>Image size: " + imgSize + " pixels ("
