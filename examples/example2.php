@@ -24,23 +24,15 @@
 
 window.onload=function()
 {
-
 	// All output is written to element by id "output"
 	var output = document.createElement('div');
 	document.body.appendChild( output );
 	
 	var webcl = new WebCLEasing( output );
-
 	var clEnabled = webcl.detectCL();
 	
-
 	if( clEnabled )
 	{
-		//setupCanvas ();
-		//CL_desaturate( output );
-		//CL_vectorAdd();
-		//webcl.dumpCLData();
-		
 		var desaturate = new CL_desaturate( output );
 		desaturate.init();
 		
