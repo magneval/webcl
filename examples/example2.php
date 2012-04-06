@@ -45,12 +45,12 @@ window.onload=function()
 		desaturate.init();
 		
 		// Execute (enqueue) kernel
-		//vectorAdd.runAll();
+		desaturate.runAll();
 		
 		// Print debug info
-		//vectorAdd.printDebug();
+		desaturate.printDebug();
 		// Print output buffer
-		//vectorAdd.printResult();
+		desaturate.printResult();
 	}
 }
 

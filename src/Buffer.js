@@ -11,10 +11,17 @@ Buffer.prototype.create = function()
 	this.blob = context.createBuffer (WebCL.CL_MEM_READ_ONLY, this.size);
 }
 
-Buffer.prototype.writeToDevice = function()
+Buffer.prototype.writeToDevice = function( dst )
 {
 	//hardcode
-	cmdQueue.enqueueWriteBuffer( this.blob, false, 0, this.size, this.data, [] );
+	if( dst )
+	{
+		cmdQueue.enqueueWriteBuffer (this.blob, false, 0, this.size, dst, []);
+	}
+	else
+	{
+		cmdQueue.enqueueWriteBuffer( this.blob, false, 0, this.size, this.	data, [] );
+	}
 }
 
 Buffer.prototype.toString = function()

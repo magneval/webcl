@@ -13,11 +13,14 @@ ImageItem = function( domElement )
 	this.domElement = domElement;
 	this.width = domElement.width;
 	this.height = domElement.height;
+	this.size = this.width * this.height;
 }
 
 ImageItem.prototype.toString = function()
 {
-
+	var str = "";
+	str += "<br/>Image size: " + this.size + " pixels ("+ this.width + " x " + this.height + ")<br/>";
+	return str;
 }
 
 CanvasItem = function( domElement, srcDom )
@@ -64,8 +67,7 @@ CL_desaturate.prototype.init = function ()
 		var pixels = this.canvas.pixels;
 
 		// Setup buffers
-		var imgSize = width * height;
-		var bufSize = imgSize * 4; // size in bytes
+		var bufSize = width * height * 4; // size in bytes
 		
 		// Reserve buffers
 		this.bufsIn = [ new Buffer( bufSize ) ];
@@ -98,20 +100,7 @@ CL_desaturate.prototype.init = function ()
 		this.kernels[0].blob.setKernelArg (3, height, WebCL.types.UINT);
 
 		// Write the buffer to OpenCL device memory
-		cmdQueue.enqueueWriteBuffer (this.bufsIn[0].blob, false, 0, bufSize, this.bufOut.data, []);
-		
-		// Execute (enqueue) kernel			  
-		this.runAll();
-
-		this.printResult();
-
-		// print results
-		this.domElement.innerHTML += "<br>Image size: " + imgSize + " pixels ("
-						 + width + " x " + height + ")";
-		
-		this.printDebug();
-		
-		this.domElement.innerHTML += "<br>Done.";
+		this.bufsIn[0].writeToDevice( this.bufOut.data );
 	} 
 	catch(e) 
 	{
@@ -132,6 +121,8 @@ CL_desaturate.prototype.runAll = function()
 
 CL_desaturate.prototype.printDebug = function()
 {
+	this.domElement.innerHTML += this.canvas.image.toString();
+	
 	for( var i = 0; i < this.bufsIn.length; i=i+1)
 	{
 		this.domElement.innerHTML += this.bufsIn[i].toString();
@@ -140,6 +131,7 @@ CL_desaturate.prototype.printDebug = function()
 	{
 		this.domElement.innerHTML += this.kernels[i].toString();
 	}
+	this.domElement.innerHTML += "<br>Done.";
 }
 
 CL_desaturate.prototype.printResult = function()
