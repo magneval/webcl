@@ -8,6 +8,35 @@ CL_desaturate = function( domElement )
 CL_desaturate.prototype = new CL_app();
 CL_desaturate.prototype.constructor = CL_desaturate;
 
+CanvasItem = function( domElement, srcDom )
+{
+	this.domElement = domElement;
+	this.srcDom = srcDom;
+	this.image = new ImageItem( srcDom );
+}
+
+ImageItem = function( domElement )
+{
+	this.domElement = domElement;
+	this.width = domElement.width;
+	this.height = domElement.height;
+}
+
+CanvasItem.prototype.setupCanvas = function()
+{
+	try 
+	{
+		var canvasImgcontext = this.domElement.getContext("2d");
+		canvasImgcontext.drawImage ( this.image.domElement, 0, 0, this.image.width, this.image.height);
+	} 
+	catch(e) 
+	{
+		document.getElementById("output").innerHTML += 
+		  "<h3>ERROR:</h3><pre style=\"color:red;\">" + e.message + "</pre>";
+		throw e;
+	}
+}
+
 function setupCanvas () 
 {
 	try 
@@ -25,18 +54,6 @@ function setupCanvas ()
 		  "<h3>ERROR:</h3><pre style=\"color:red;\">" + e.message + "</pre>";
 		throw e;
 	}
-}
-
-function loadKernel(id){
-  var kernelElement = document.getElementById(id);
-  var kernelSource = kernelElement.text;
-  if (kernelElement.src != "") {
-      var mHttpReq = new XMLHttpRequest();
-      mHttpReq.open("GET", kernelElement.src, false);
-      mHttpReq.send(null);
-      kernelSource = mHttpReq.responseText;
-  } 
-  return kernelSource;
 }
 
 CL_desaturate.prototype.init = function () 
