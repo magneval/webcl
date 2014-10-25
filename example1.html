@@ -1,8 +1,16 @@
 <html>
 <head>
+
+<script src="./src/WebCL.js"></script>
+<script src="./src/Kernel.js"></script>
+<script src="./src/Buffer.js"></script>
+<script src="./src/ImageItem.js"></script>
+<script src="./src/CanvasItem.js"></script>
+<script src="./src/CL_app.js"></script>
+
 <title>WebCL - Example 1</title>
 
-<script src="../src/examples/CL_vectorAdd.js"></script>
+<script src="./src/examples/CL_vectorAdd.js"></script>
 
 <script id="clProgramVectorAdd" type="text/x-opencl">
 __kernel void ckVectorAdd(	__global unsigned int* vectorIn1,
@@ -55,7 +63,11 @@ window.onload=function()
 }
 
 </script>
+
 </head>
+
 <body>
+
+
 </body>
 </html>
